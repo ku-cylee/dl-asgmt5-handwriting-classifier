@@ -42,11 +42,7 @@ class nn_convolutional_layer:
         _, wout, hout, _, _, _ = windows.shape
         reshaped_windows = windows.reshape(b, wout, hout, -1, 1)
 
-        y = np.zeros((b, cout, wout, hout))
-        for b_idx in range(b):
-            y[b_idx] = np.squeeze(reshaped_W.dot(reshaped_windows[b_idx]), axis=(1, 4))
-
-        return y + self.b
+        return np.swapaxes(np.squeeze(reshaped_W.dot(reshaped_windows), axis=(1, -1)), 0, 1) + self.b
 
     def backprop(self, x, dLdy):
         cout, cin, wfil, hfil = self.W.shape
@@ -168,22 +164,10 @@ class nn_activation_layer:
         pass
     
     def forward(self, x):
-        ##########
-        ##########
-        #   Complete the method with your implementation
-        ##########
-        ##########
-        
-        return out
+        return np.where(x > 0, x, 0)
     
     def backprop(self, x, dLdy):
-        ##########
-        ##########
-        #   Complete the method with your implementation
-        ##########
-        ##########
-        
-        return dLdx
+        return np.where(x > 0, dLdy, 0)
 
 
 ##########
