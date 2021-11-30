@@ -134,22 +134,13 @@ class nn_fc_layer:
         self.b=0.01+np.zeros((output_size))
 
     def forward(self,x):
-        ##########
-        ##########
-        #   Complete the method with your implementation
-        ##########
-        ##########
-        return out
+        return x @ self.W.T + self.b.T
 
     def backprop(self,x,dLdy):
-
-        ##########
-        ##########
-        #   Complete the method with your implementation
-        ##########
-        ##########
-
-        return dLdx,dLdW,dLdb
+        dLdW = dLdy.T @ x
+        dLdb = dLdy.sum(axis=0)[None, :]
+        dLdx = dLdy @ self.W
+        return dLdW, dLdb, dLdx
 
     def update_weights(self,dLdW,dLdb):
 
@@ -206,21 +197,14 @@ class nn_softmax_layer:
         pass
 
     def forward(self, x):
-        ##########
-        ##########
-        #   Complete the method with your implementation
-        ##########
-        ##########
-        return out
+        exp_scores = np.exp(x)
+        exp_scores_sum = exp_scores.sum(axis=1).reshape(-1, 1)
+        return exp_scores / exp_scores_sum
 
     def backprop(self, x, dLdy):
-        ##########
-        ##########
-        #   Complete the method with your implementation
-        ##########
-        ##########
-
-        return dLdx
+        y = self.forward(x)
+        y_prods = y[:, :, None] @ y[:, None, :]
+        return dLdy * y - np.squeeze(dLdy[:, None, :] @ y_prods, axis=1)
 
 ##########
 #   cross entropy layer
@@ -233,20 +217,16 @@ class nn_cross_entropy_layer:
         pass
 
     def forward(self, x, y):
-
-        ##########
-        ##########
-        #   Complete the method with your implementation
-        ##########
-        ##########
-
-        return out
+        bch_size, _ = x.shape
+        real_scores = x[np.arange(bch_size), np.squeeze(y, axis=-1)]
+        return - np.average(np.log(real_scores))
 
     def backprop(self, x, y):
-        ##########
-        ##########
-        #   Complete the method with your implementation
-        ##########
-        ##########
+        bch_size, _ = x.shape
+        bch_size_neginv = - 1 / bch_size
 
-        return dLdx
+        y_mtx = np.zeros_like(x)
+        for b_idx in range(bch_size):
+            y_mtx[b_idx, y[b_idx]] = bch_size_neginv
+
+        return y_mtx / x
