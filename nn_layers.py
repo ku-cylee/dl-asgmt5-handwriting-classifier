@@ -130,13 +130,13 @@ class nn_fc_layer:
         self.b=0.01+np.zeros((output_size))
 
     def forward(self,x):
-        return x @ self.W.T + self.b.T
+        return x.reshape(x.shape[0], -1) @ self.W.T + self.b.T
 
     def backprop(self,x,dLdy):
-        dLdW = dLdy.T @ x
-        dLdb = dLdy.sum(axis=0)[None, :]
-        dLdx = dLdy @ self.W
-        return dLdW, dLdb, dLdx
+        dLdW = dLdy.T @ x.reshape(x.shape[0], -1)
+        dLdb = dLdy.sum(axis=0)
+        dLdx = (dLdy @ self.W).reshape(x.shape)
+        return dLdx, dLdW, dLdb
 
     def update_weights(self,dLdW,dLdb):
 
@@ -201,16 +201,16 @@ class nn_cross_entropy_layer:
         pass
 
     def forward(self, x, y):
-        bch_size, _ = x.shape
-        real_scores = x[np.arange(bch_size), np.squeeze(y, axis=-1)]
+        batch_size, _ = x.shape
+        real_scores = x[np.arange(batch_size), y]
         return - np.average(np.log(real_scores))
 
     def backprop(self, x, y):
-        bch_size, _ = x.shape
-        bch_size_neginv = - 1 / bch_size
+        batch_size, _ = x.shape
+        bch_size_neginv = - 1 / batch_size
 
         y_mtx = np.zeros_like(x)
-        for b_idx in range(bch_size):
+        for b_idx in range(batch_size):
             y_mtx[b_idx, y[b_idx]] = bch_size_neginv
 
         return y_mtx / x
