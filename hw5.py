@@ -88,17 +88,17 @@ class nn_mnist_classifier:
         cv1_f = self.conv_layer_1.forward(x)
 
         # similarly, fill in ... part in the below
-        ac1_f = ...
-        mp1_f = ...
+        ac1_f = self.act_1.forward(cv1_f)
+        mp1_f = self.maxpool_layer_1.forward(ac1_f)
 
-        fc1_f = ...
-        ac2_f = ...
+        fc1_f = self.fc1.forward(mp1_f)
+        ac2_f = self.act_2.forward(fc1_f)
 
-        fc2_f = ...
+        fc2_f = self.fc2.forward(ac2_f)
 
-        sm1_f = ...
+        sm1_f = self.sm1.forward(fc2_f)
 
-        cn_f = ...
+        cn_f = self.xent.forward(sm1_f, y)
 
         # cn_f should be the loss of the current input batch
 
@@ -128,16 +128,16 @@ class nn_mnist_classifier:
         cn_b = self.xent.backprop(sm1_f, y)
 
         # similarly, fill in ... part in the below
-        sm1_b = ...
+        sm1_b = self.sm1.backprop(fc2_f, cn_b)
 
-        fc2_b, dldw_fc2, dldb_fc2 = ...
-        ac2_b = ...
+        fc2_b, dldw_fc2, dldb_fc2 = self.fc2.backprop(ac2_f, sm1_b)
+        ac2_b = self.act_2.backprop(fc1_f, fc2_b)
 
-        fc1_b, dldw_fc1, dldb_fc1 = ...
-        mp1_b = ...
+        fc1_b, dldw_fc1, dldb_fc1 = self.fc1.backprop(mp1_f, ac2_b)
+        mp1_b = self.maxpool_layer_1.backprop(ac1_f, fc1_b)
 
-        ac1_b = ...
-        cv1_b, dldw_cv1, dldb_cv1 = ...
+        ac1_b = self.act_1.backprop(cv1_f, mp1_b)
+        cv1_b, dldw_cv1, dldb_cv1 = self.conv_layer_1.backprop(x, ac1_b)
 
         ########################
         # Q2 ends here
@@ -160,19 +160,19 @@ class nn_mnist_classifier:
 
         # fill in ... part in the below
         # perform momentum update on each v variable for W and b at convolutional and FC layers
-        self.v_w_fc2 = ...
-        self.v_b_fc2 = ...
+        self.v_w_fc2 = friction * self.v_w_fc2 + (1 - friction) * dldw_fc2
+        self.v_b_fc2 = friction * self.v_b_fc2 + (1 - friction) * dldb_fc2
 
-        self.v_w_fc1 = ...
-        self.v_b_fc1 = ...
+        self.v_w_fc1 = friction * self.v_w_fc1 + (1 - friction) * dldw_fc1
+        self.v_b_fc1 = friction * self.v_b_fc1 + (1 - friction) * dldb_fc1
 
-        self.v_w_cv1 = ...
-        self.v_b_cv1 = ...
+        self.v_w_cv1 = friction * self.v_w_cv1 + (1 - friction) * dldw_cv1
+        self.v_b_cv1 = friction * self.v_b_cv1 + (1 - friction) * dldb_cv1
 
         # using v, perform weight update for each layer
-        self.fc2.update_weights(...)
-        self.fc1.update_weights(...)
-        self.conv_layer_1.update_weights(...)
+        self.fc2.update_weights(-lr * self.v_w_fc2, -lr * self.v_b_fc2)
+        self.fc1.update_weights(-lr * self.v_w_fc1, -lr * self.v_b_fc1)
+        self.conv_layer_1.update_weights(-lr * self.v_w_cv1, -lr * self.v_b_cv1)
         ########################
         # Q3 ends here
         ########################
@@ -211,9 +211,9 @@ X_test = X_test.astype('float64') / 255.0
 # Q. Set learning rate, batch size and total number of epochs for training
 # There are no definitive answers, experiement with several hyperparameters
 ########################
-lr = ...
-n_epoch = ...
-batch_size = ...
+lr = 1.8
+n_epoch = 2
+batch_size = 1024
 
 # set friction (alpha) for momentum
 friction = 0.9
