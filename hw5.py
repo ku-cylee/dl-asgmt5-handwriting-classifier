@@ -150,7 +150,6 @@ class nn_mnist_classifier:
         # restore upstream gradients
         (dldw_fc2, dldb_fc2, dldw_fc1, dldb_fc1, dldw_cv1, dldb_cv1) = self.bkp_cache
 
-        friction = self.mmt_friction
         lr = self.lr
 
         ########################
@@ -160,14 +159,14 @@ class nn_mnist_classifier:
 
         # fill in ... part in the below
         # perform momentum update on each v variable for W and b at convolutional and FC layers
-        self.v_w_fc2 = friction * self.v_w_fc2 + (1 - friction) * dldw_fc2
-        self.v_b_fc2 = friction * self.v_b_fc2 + (1 - friction) * dldb_fc2
+        self.v_w_fc2 = self.get_new_velocity(self.v_w_fc2, dldw_fc2)
+        self.v_b_fc2 = self.get_new_velocity(self.v_b_fc2, dldb_fc2)
 
-        self.v_w_fc1 = friction * self.v_w_fc1 + (1 - friction) * dldw_fc1
-        self.v_b_fc1 = friction * self.v_b_fc1 + (1 - friction) * dldb_fc1
+        self.v_w_fc1 = self.get_new_velocity(self.v_w_fc1, dldw_fc1)
+        self.v_b_fc1 = self.get_new_velocity(self.v_b_fc1, dldb_fc1)
 
-        self.v_w_cv1 = friction * self.v_w_cv1 + (1 - friction) * dldw_cv1
-        self.v_b_cv1 = friction * self.v_b_cv1 + (1 - friction) * dldb_cv1
+        self.v_w_cv1 = self.get_new_velocity(self.v_w_cv1, dldw_cv1)
+        self.v_b_cv1 = self.get_new_velocity(self.v_b_cv1, dldb_cv1)
 
         # using v, perform weight update for each layer
         self.fc2.update_weights(-lr * self.v_w_fc2, -lr * self.v_b_fc2)
@@ -176,6 +175,9 @@ class nn_mnist_classifier:
         ########################
         # Q3 ends here
         ########################
+
+    def get_new_velocity(self, velocity, gradient):
+        return self.mmt_friction * velocity + (1 - self.mmt_friction) * gradient
 
 
 ########################
